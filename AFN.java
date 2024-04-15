@@ -40,37 +40,44 @@ public class AFN {
      * por el AFN. Recuerde lo aprendido en el proyecto 1.
      */
     public boolean accept(String string) {
-        System.out.println("Alfabeto: " + Arrays.toString(this.alfabeto));
-        System.out.println("Cantidad de estados de transicion: " + this.cantidadEstados);
-        System.out.println("Estados finales: " + Arrays.toString(this.estadosFinales));
-        System.out.println("Transisciones");
-    
-        for (int i = 0; i < this.transiciones.size(); i++) {
-            System.out.println(
-                    "Transiciones para: " + this.alfabeto[i] + ": " + Arrays.toString(this.transiciones.get(i)));
-        }
-    
+        //Lista para las transicione siguientes;
         List<String> estadosActuales = new ArrayList<>();
-        estadosActuales.add("1");
+        estadosActuales.add("1"); //En uno por que lamba es en cero
+    
+        List<String> cierreLambdaInicial = estadoLambda(estadosActuales);
+    
+        estadosActuales.addAll(cierreLambdaInicial);
     
         // Ciclo sobre cada símbolo de la cadena
         for (char simbolo : string.toCharArray()) {
+            
+            //LIsta para el nuevo estado
             List<String> nuevosEstados = new ArrayList<>();
     
             // Ciclo sobre cada estado actual
             for (String estado : estadosActuales) {
-                int indiceSimbolo = obtenerIndiceSimbolo(simbolo);
-                String[] transicionesEstado = transiciones.get(indiceSimbolo);
+                int indice = searchIndex(simbolo);
+                String[] transicionesEstado = transiciones.get(indice);
                 String[] estadosDestino = transicionesEstado[Integer.parseInt(estado)].split(",");
     
-                nuevosEstados.addAll(Arrays.asList(estadosDestino));
+                for (String estadoDestino : estadosDestino) {
+                    //Verificar si no hay dos para el mismo
+                    String[] estadosDestinoIndividuales = estadoDestino.split(";");
+                    for (String destino : estadosDestinoIndividuales) {
+                        nuevosEstados.add(destino);
+                    }
+                }
             }
     
+            List<String> cierreLambdaNuevos = estadoLambda(nuevosEstados);
+    
+            estadosActuales.addAll(cierreLambdaNuevos);
+    
+            // Actualizar el conjunto de estados actuales con los nuevos
             estadosActuales = nuevosEstados;
-            System.out.println("\nProcesando símbolo: " + simbolo);
-            System.out.println("Estados actuales: " + estadosActuales);
         }
     
+        //Verificacion de finales y devolver si es aceptada o no
         for (String estado : estadosActuales) {
             if (Arrays.asList(estadosFinales).contains(estado)) {
                 System.out.println("La cadena '" + string + "' es aceptada por el AFN.");
@@ -82,7 +89,34 @@ public class AFN {
         return false;
     }
     
-    private int obtenerIndiceSimbolo(char simbolo) {
+    private List<String> estadoLambda(List<String> estados) {
+        //Copiar array oroginal por cualquier cosa
+        List<String> cambiosLambda = new ArrayList<>(estados);
+        boolean cambios;
+        do {
+            cambios = false;
+            List<String> nuevosEstados = new ArrayList<>();
+            for (String estado : cambiosLambda) {
+                int indiceEstado = Integer.parseInt(estado);
+                String[] transicionesLambda = transiciones.get(0); //Lambda en posicón 0
+                String[] estadosDestino = transicionesLambda[indiceEstado].split(",");
+                for (String estadoDestino : estadosDestino) {
+                    String[] estadosDestinoIndividuales = estadoDestino.split(";");
+                    for (String destino : estadosDestinoIndividuales) {
+                        if (!cambiosLambda.contains(destino) && !nuevosEstados.contains(destino)) {
+                            nuevosEstados.add(destino);
+                            cambios = true;
+                        }
+                    }
+                }
+            }
+            cambiosLambda.addAll(nuevosEstados);
+        } while (cambios);
+        return cambiosLambda;
+    }
+    
+    private int searchIndex(char simbolo) {
+        //Retoran en que posición s eencuentra el simbolo dentro del alfabeto
         for (int i = 0; i < alfabeto.length; i++) {
             if (alfabeto[i].charAt(0) == simbolo) {
                 return i;
@@ -193,11 +227,7 @@ public class AFN {
                         break;
                     }
 
-                    if (afn.accept(cuerda)) {
-                        System.out.println("La cuerda '" + cuerda + "' es aceptada por el AFN.");
-                    } else {
-                        System.out.println("La cuerda '" + cuerda + "' es rechazada por el AFN.");
-                    }
+                    afn.accept(cuerda);
 
                     System.out.println("Ingrese otra cuerda (o una cuerda de longitud 0 para salir):");
                 }
